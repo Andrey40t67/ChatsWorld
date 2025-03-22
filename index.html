@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Чат с Firebase</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-wrapper {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            max-width: 75%;
+            display: inline-block;
+        }
+
+        .user {
+            background: #d1f5d3;
+            align-self: flex-end;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .admin {
+            background: #ecf0f1;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            background-color: #f4f4f4;
+        }
+
+        .chat-input button {
+            margin-left: 10px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-wrapper">
+  <div class="chat-header">
+    <h2>Чат</h2>
+  </div>
+
+  <div class="chat-box" id="chatBox"></div>
+
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Введите сообщение..." />
+    <button id="sendMessageBtn">Отправить</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js"></script>
+
+<script>
+// Инициализация Firebase с твоим конфигом
+const firebaseConfig = {
+  apiKey: "AIzaSyDFywG3MoVS5sZSMejRzUN5ZVWvqJnMUJg",
+  authDomain: "chatworld-d770b.firebaseapp.com",
+  projectId: "chatworld-d770b",
+  storageBucket: "chatworld-d770b.firebasestorage.app",
+  messagingSenderId: "334955822335",
+  appId: "1:334955822335:web:7e383e9b9c22de2e7c20ca"
+};
+
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(app);
+
+// Получаем данные сообщений из Firestore
+function loadMessages() {
+  db.collection('messages').orderBy('timestamp').onSnapshot((querySnapshot) => {
+    chatBox.innerHTML = '';  // Очищаем чат
+    querySnapshot.forEach((doc) => {
+      const msg = doc.data();
+      addMessage(msg.text, msg.sender);  // Добавляем сообщение
+    });
+  });
+}
+
+// Добавление сообщения в чат
+function addMessage(message, sender) {
+  const div = document.createElement('div');
+  div.className = `message ${sender}`;
+  div.textContent = message;
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;  // Прокрутка вниз
+}
+
+// Отправка сообщения от пользователя
+function sendUserMessage() {
+  const userInput = document.getElementById('userInput');
+  const userMessage = userInput.value.trim();
+
+  if (userMessage) {
+    saveMessage(userMessage, 'user');  // Сохраняем сообщение в Firestore
+    userInput.value = '';  // Очищаем поле ввода
+  }
+}
+
+// Сохранение сообщения в Firestore
+async function saveMessage(message, sender) {
+  try {
+    await db.collection('messages').add({
+      text: message,
+      sender: sender,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
+
+// Привязка кнопки отправки сообщения
+document.getElementById('sendMessageBtn').addEventListener('click', sendUserMessage);
+
+// Загрузка сообщений при старте
+loadMessages();
+</script>
+
+</body>
+</html>
